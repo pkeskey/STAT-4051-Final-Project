@@ -11,10 +11,31 @@ output: html_document
 library(dplyr)
 
 # 2015–2018 data merges
-pitches   <- read.csv("pitches.csv")
-atbats    <- read.csv("atbats.csv")
-games     <- read.csv("games.csv")
-players   <- read.csv("player_names.csv")
+if (!exists("pitches")) {
+  pitches = read.csv("pitches.csv")
+  save(pitches, file="pitches.csv")
+}
+
+if (!exists("atbats")) {
+  atbats = read.csv("atbats.csv")
+  save(atbats, file="atbats.csv")
+}
+
+if (!exists("games")) {
+  games <- read.csv("games.csv")
+  save(games, file="games.csv")
+}
+
+if (!exists("player_names")) {
+  players <- read.csv("player_names.csv")
+  save(players, file="player_names.csv")
+}
+# pitches   <- read.csv("pitches.csv")
+# save(pitches, file="pitches.csv")
+# atbats    <- read.csv("atbats.csv")
+# save(atbats, file="atbats.csv")
+# games     <- read.csv("games.csv")
+# players   <- read.csv("player_names.csv")
 
 pitches_atbats <- pitches %>%
   left_join(atbats, by = "ab_id")
@@ -22,8 +43,12 @@ pitches_atbats <- pitches %>%
 all_data <- pitches_atbats %>%
   left_join(games, by = "g_id")
 
-players <- players %>%
-  mutate(full_name = paste(first_name, last_name))
+# players <- players %>%
+#   mutate(full_name = paste(first_name, last_name))
+
+players$full_name = paste(players$first_name, players$last_name)
+
+players = subset(players, select = -c(first_name, last_name))
 
 all_data <- all_data %>%
   left_join(players, by = c("pitcher_id" = "id")) %>%
@@ -32,13 +57,28 @@ all_data <- all_data %>%
   rename(batter_name = full_name)
 
 # Read 2019 data
-pitches_2019 <- read.csv("2019_pitches.csv")
-atbats_2019  <- read.csv("2019_atbats.csv")
-games_2019   <- read.csv("2019_games.csv")
+if (!exists("pitches_2019")) {
+  pitches_2019 <- read.csv("2019_pitches.csv")
+  load(pitches_2019, file="2019_pitches.csv")
+}
 
-# player_names.csv again if needed
-players <- read.csv("player_names.csv") %>%
-  mutate(full_name = paste(first_name, last_name))
+if (!exists("at_bats_2019")) {
+  atbats_2019  <- read.csv("2019_atbats.csv")
+  load(atbats_2019, file="2019_atbats.csv")
+}
+
+if (!exists("games_2019")) {
+  games_2019   <- read.csv("2019_games.csv")
+  load(games_2019, file="2019_games.csv")
+}
+
+
+
+# # player_names.csv again if needed
+# players <- read.csv("player_names.csv") %>%
+#   mutate(full_name = paste(first_name, last_name))
+
+
 
 # Merge 2019 pitches + atbats + games
 pitches_atbats_2019 <- pitches_2019 %>%
@@ -207,8 +247,14 @@ ggplot(pca_scores, aes(x = PC1, y = PC2, color = pitch_type)) +
 scaled_mat <- scale(pca_vars)
 
 set.seed(123)
-k <- 4  # arbitrary choice
-km_res <- kmeans(scaled_mat, centers = k, nstart = 20)
+k.max = 15
+
+wss = sapply(1:k.max, function(k){kmeans(scaled_mat,
+                                         centers = k, nstart = 20, iter.max = 15)$tot.withinss})
+# k <- 4  # arbitrary choice
+# km_res <- kmeans(scaled_mat, centers = k, nstart = 20)
+
+
 
 # Cluster labels
 km_clusters <- km_res$cluster
